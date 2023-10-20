@@ -5,16 +5,12 @@ const host = 'localhost';
 const port = 8000;
 
 const requestListener = function (req, res) {
-  // Читаємо вміст XML файлу
   fs.readFile('data.xml', 'utf-8', (err, data) => {
     if (err) {
       res.writeHead(500);
       res.end("Помилка сервера");
     } else {
-      // Обробка та фільтрація даних з XML
       const filteredData = filterXMLData(data);
-
-      // Відправляємо відповідь клієнту
       res.writeHead(200, { 'Content-Type': 'application/xml' });
       res.end(filteredData);
     }
@@ -22,12 +18,17 @@ const requestListener = function (req, res) {
 };
 
 function filterXMLData(xmlData) {
-  // Опрацювання та фільтрація XML-даних
-  // Додайте ваш код тут
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+    const xmlResult = new XMLSerializer().serializeToString(xmlDoc);
 
-  return xmlData; // Покищо повертаємо незмінений XML
+    return xmlResult;
+  } catch (err) {
+    console.error('Помилка при обробці XML:', err);
+    return xmlData;
+  }
 }
-
 const server = http.createServer(requestListener);
 
 server.listen(port, host, () => {
