@@ -1,51 +1,23 @@
-const fs = require('fs');
-const fastXmlParser = require('fast-xml-parser');
-const http = require('http');
- 
-const hostname = 'localhost';
-const port = 8000;
-
+const http = require("http");
+const xml = require("fast-xml-parser");
+const fs = require("node:fs");
+const parser = new xml.XMLParser();
+const builder = new xml.XMLBuilder({ format: true });
 const server = http.createServer((req, res) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    fs.readFile('data.xml', 'utf-8', (err, data) => {
-      if (err) {
-        console.error('Error reading the XML file:', err);
-        return;
-         }
-      const parser = new fastXmlParser.XMLParser()
-        try {
-          // Parse the XML
-         const options = {
-            attributeNamePrefix: "@_",
-            attrNodeName: false,
-            textNodeName: "#text",
-            ignoreAttributes: false,
-            ignoreNameSpace: false,
-            parseNodeValue: true,
-            parseAttributeValue: true,
-            trimValues: true,
-            parseTrueNumberOnly: false,
-          };
-      
-        const result = parser.parse(data, options);
-        const builder = new fastXmlParser.XMLBuilder();
-        const filtered = result.indicators.inflation.filter(v => v.ku == 13 && v.value > 5);
-        const values = [];
-        for (const i of filtered) {
-            values.push(i['value']);
+    const xmldata = fs.readFileSync("data.xml", "utf-8");
+    const obj = parser.parse(xmldata);
+    const filteredData = Array.isArray(obj.indicators.inflation) ? obj.indicators.inflation.filter(item => item.ku === 13 && parseFloat(item.value) > 5) : [];
+    const necessaryData = filteredData.map(item => item.value);
+    const xmlObj = {
+        data: {
+            value: necessaryData
         }
-        const newObj = builder.build({'data': {'value' : values } } );
-        console.log(newObj);
-
-         res.end(newObj);
-        
-        } catch (parseErr) {
-          console.error('Error parsing XML:', parseErr);
-        }
-      });
-  });
- 
-  server.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}`);
-  });
+    };
+    const ActualXml = builder.build(xmlObj);
+    res.setHeader('Content-Type', 'application/xml');
+    res.end(ActualXml);
+});
+const port = 8000;
+server.listen(port, () => {
+    console.log(`Сервер працює на порту ${port}`);
+});
